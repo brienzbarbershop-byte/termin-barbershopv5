@@ -6,7 +6,7 @@ export default function IntroSplash({ variant, always }: Readonly<{ variant: "cl
   const [isVisible, setIsVisible] = useState(() => {
     if (always) return true;
     const key = `hasSeenIntro_${variant}`;
-    try { return !window.sessionStorage.getItem(key); } catch { return true; }
+    try { return !globalThis.sessionStorage.getItem(key); } catch { return true; }
   });
   const [accent, setAccent] = useState(false);
   useEffect(() => {
@@ -14,7 +14,7 @@ export default function IntroSplash({ variant, always }: Readonly<{ variant: "cl
     const key = `hasSeenIntro_${variant}`;
     const t1 = setTimeout(() => { setAccent(true); }, 4100);
     const t2 = setTimeout(() => { setIsVisible(false); }, 4500);
-    try { if (!always) window.sessionStorage.setItem(key, "1"); } catch {}
+    try { if (!always) globalThis.sessionStorage.setItem(key, "1"); } catch {}
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [variant, isVisible, always]);
   const src = variant === "admin" ? "/logo_admin.svg" : "/logo.svg";

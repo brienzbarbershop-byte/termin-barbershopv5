@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../../lib/prisma";
 import CancelButton from "../CancelButton";
 import Link from "next/link";
-
-const prisma = new PrismaClient();
 
 function fmt(d: Date) {
   const datum = d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Zurich" });
@@ -10,8 +8,8 @@ function fmt(d: Date) {
   return { datum, zeit };
 }
 
-export default async function ManagePage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params;
+export default async function ManagePage({ params }: { params: { token: string } }) {
+  const { token } = params;
   const rows = (await prisma.$queryRaw<{ id: number; date: Date; status: string; service_name: string | null; price_chf: number | null }[]>`
     SELECT b.id, b.date, b.status, s.name as service_name, s."priceCHF" as price_chf
     FROM "Booking" b LEFT JOIN "Service" s ON s.id = b."serviceId"

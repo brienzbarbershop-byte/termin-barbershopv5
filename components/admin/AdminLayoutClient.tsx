@@ -21,15 +21,15 @@ export default function AdminLayoutClient({ children }: Readonly<{ children: Rea
       }
     }
     const opts = { passive: true } as AddEventListenerOptions;
-    window.addEventListener("mousemove", handler, opts);
-    window.addEventListener("keydown", handler, opts as EventListenerOptions);
-    window.addEventListener("click", handler, opts);
-    window.addEventListener("touchstart", handler, opts);
+    globalThis.addEventListener("mousemove", handler, opts);
+    globalThis.addEventListener("keydown", handler, opts as EventListenerOptions);
+    globalThis.addEventListener("click", handler, opts);
+    globalThis.addEventListener("touchstart", handler, opts);
     return () => {
-      window.removeEventListener("mousemove", handler);
-      window.removeEventListener("keydown", handler as EventListener);
-      window.removeEventListener("click", handler);
-      window.removeEventListener("touchstart", handler);
+      globalThis.removeEventListener("mousemove", handler);
+      globalThis.removeEventListener("keydown", handler as EventListener);
+      globalThis.removeEventListener("click", handler);
+      globalThis.removeEventListener("touchstart", handler);
     };
   }, []);
 
@@ -57,7 +57,7 @@ export default function AdminLayoutClient({ children }: Readonly<{ children: Rea
       <div className="mt-auto pt-4 border-t border-neutral-800">
         <button
           className="w-full px-3 py-2 rounded border border-neutral-700 text-neutral-100 hover:bg-neutral-900"
-          onClick={async () => { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}; window.location.href = "/login"; }}
+          onClick={async () => { try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}; globalThis.location.href = "/login"; }}
         >
           Abmelden
         </button>

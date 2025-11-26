@@ -1,11 +1,11 @@
 "use client";
-import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function ResetPasswordPage({ params }: Readonly<{ params: Promise<{ token: string }> }>) {
+export default function ResetPasswordPage() {
   const router = useRouter();
-  const { token } = use(params);
+  const { token } = useParams() as { token: string };
   const [p1, setP1] = useState("");
   const [p2, setP2] = useState("");
   const [status, setStatus] = useState<string>("");

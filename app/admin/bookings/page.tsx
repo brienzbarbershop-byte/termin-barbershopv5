@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 export const dynamic = "force-dynamic";
 import AdminClient from "../AdminClient";
-
-const prisma = new PrismaClient();
 
 export default async function AdminBookings() {
   const raw = await prisma.booking.findMany({ include: { service: true }, orderBy: { date: "desc" } });

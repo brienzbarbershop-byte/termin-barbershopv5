@@ -55,7 +55,7 @@ export default function AdminQrPage() {
         )}
         <canvas ref={canvasRef} className="hidden" />
         <div className="flex gap-3">
-          <button onClick={() => window.print()} className="px-4 py-2 rounded bg-[#C5A059] text-black">PDF drucken</button>
+          <button onClick={() => globalThis.print()} className="px-4 py-2 rounded bg-[#C5A059] text-black">PDF drucken</button>
           {dataUrl && (
             <a href={dataUrl} download="barber-termin-qr.png" className="px-4 py-2 rounded border border-[#C5A059] text-[#C5A059]">
               PNG herunterladen

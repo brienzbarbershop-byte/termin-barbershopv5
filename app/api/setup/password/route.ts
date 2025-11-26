@@ -1,24 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
-import fs from "node:fs";
-import path from "node:path";
 import bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 
 function isComplex(pw: string) {
   return pw.length >= 12 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /\d/.test(pw);
-}
-
-function readAdminPasswordFromFile(): string | undefined {
-  try {
-    const envPath = path.join(process.cwd(), ".env");
-    const content = fs.readFileSync(envPath, "utf8");
-    const match = /^ADMIN_PASSWORD=(.*)$/m.exec(content);
-    return match ? match[1].trim() : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 export async function POST(req: Request | NextRequest) {

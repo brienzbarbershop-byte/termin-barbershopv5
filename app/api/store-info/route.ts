@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../lib/prisma";
 
 export async function GET() {
   try {
@@ -9,6 +7,7 @@ export async function GET() {
     const email = process.env.ADMIN_CONTACT_EMAIL || "kontakt@barbershop-brienz.ch";
     return NextResponse.json({ email, hasConfig: !!config }, { status: 200 });
   } catch {
-    return NextResponse.json({}, { status: 200 });
+    const email = process.env.ADMIN_CONTACT_EMAIL || "kontakt@barbershop-brienz.ch";
+    return NextResponse.json({ email, hasConfig: false }, { status: 200 });
   }
 }

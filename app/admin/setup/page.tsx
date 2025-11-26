@@ -51,7 +51,7 @@ export default function AdminSetupPage() {
       setRepeatPassword("");
       setStatus("Hasło zmienione. Nastąpi wylogowanie.");
       alert("Hasło zmienione. Nastąpi wylogowanie.");
-      window.location.href = "/login";
+      globalThis.location.href = "/login";
     } else {
       const data = await r.json().catch(() => ({ error: "Fehler" }));
       setStatus(data.error || "Fehler bei der Passwortänderung");

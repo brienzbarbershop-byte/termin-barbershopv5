@@ -9,7 +9,7 @@ export default function AdminIntro() {
   useEffect(() => {
     const key = "hasSeenIntro_admin";
     try {
-      const seen = window.sessionStorage.getItem(key);
+      const seen = globalThis.sessionStorage.getItem(key);
       if (seen) { router.replace("/login"); return; }
     } catch {}
     const t = setTimeout(() => { router.replace("/login"); }, 3100);

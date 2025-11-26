@@ -1,7 +1,5 @@
 export const runtime = "nodejs";
 import { NextResponse } from "next/server";
-import fs from "node:fs";
-import path from "node:path";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../../lib/prisma";
 import { setAdminCookie } from "../../../../lib/auth";

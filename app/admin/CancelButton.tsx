@@ -7,7 +7,7 @@ export default function CancelButton({ id }: { id: number }) {
     setLoading(true);
     await fetch(`/api/bookings/${id}`, { method: "DELETE" });
     setLoading(false);
-    window.location.reload();
+    globalThis.location.reload();
   }
   return (
     <button

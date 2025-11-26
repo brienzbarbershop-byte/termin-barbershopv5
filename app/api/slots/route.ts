@@ -99,7 +99,7 @@ export async function GET(req: Request) {
       const overlapsBreak = breakIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
       const overlapsManual = manualIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
       const label = toLabel(start);
-      const past = isToday ? start < nowMinutesZurich : false;
+      const past = isToday && start < nowMinutesZurich;
       slots.push({ time: label, isBooked: overClosing || overlaps || overlapsBreak || overlapsManual || past });
     }
     return NextResponse.json(slots, { status: 200 });

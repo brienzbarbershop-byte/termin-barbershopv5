@@ -182,7 +182,7 @@ export default function Home() {
             value={date}
             minDate={new Date()}
             maxDate={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
-            tileDisabled={({ date, view }) => view === "month" ? !openDays[date.getDay()] : false}
+            tileDisabled={({ date, view }) => view === "month" && !openDays[date.getDay()]}
             className="react-calendar w-full max-w-xl rounded-lg"
           />
           <div className="flex gap-4">

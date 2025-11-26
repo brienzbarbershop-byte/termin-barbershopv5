@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { PrismaClient, BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@prisma/client";
 import { requireAdmin } from "../../../lib/auth";
 import { randomUUID } from "node:crypto";
 import { sendBookingConfirmation } from "../../../lib/email";
+import { prisma } from "../../../lib/prisma";
 
-const prisma = new PrismaClient();
 
 export async function GET(req: Request) {
   const auth = await requireAdmin();
@@ -118,7 +118,9 @@ export async function POST(req: Request) {
         if (overlapsManual) {
           throw new Error("BLOCKED");
         }
-      } catch {}
+      } catch {
+        console.error("blockedSlot check failed");
+      }
       // Prüfen, ob Termin in regelmäßiger Pause liegt
       try {
         const breaks = await tx.recurringBreak.findMany({ where: { enabled: true } });
@@ -130,7 +132,9 @@ export async function POST(req: Request) {
         if (overlapsBreak) {
           throw new Error("BLOCKED");
         }
-      } catch {}
+      } catch {
+        console.error("recurringBreaks check failed");
+      }
       const createdBooking = await tx.booking.create({
         data: {
           serviceId,
@@ -159,7 +163,9 @@ export async function POST(req: Request) {
         if (cid) {
           await tx.$executeRaw`UPDATE "Booking" SET "customerId" = ${cid} WHERE id = ${createdBooking.id}`;
         }
-      } catch {}
+      } catch {
+        console.error("customer linkage failed");
+      }
       return createdBooking;
     });
     const token = created.cancellationToken || randomUUID();

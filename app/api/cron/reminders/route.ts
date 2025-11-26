@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../../lib/prisma";
 import { sendReminderEmail } from "../../../../lib/email";
-
-const prisma = new PrismaClient();
 
 function zurichDateTimeParts(d: Date) {
   const dateStr = d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Zurich" });
@@ -61,11 +59,17 @@ export async function GET(req: Request) {
               await prisma.$executeRaw`
                 UPDATE "Booking" SET "reminderSent" = true WHERE id = ${b.id}
               `;
-            } catch {}
+            } catch {
+              console.error("reminder flag update failed");
+            }
           sentCount++;
         }
-      } catch {}
+      } catch {
+        console.error("reminder send failed");
+      }
     }
-  } catch {}
+  } catch {
+    console.error("reminders query failed");
+  }
   return NextResponse.json(debug ? { success: true, sentCount, matched } : { success: true, sentCount });
 }

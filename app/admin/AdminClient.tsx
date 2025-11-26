@@ -244,7 +244,7 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
                 <tr
                   key={b.id}
                   className="border-t border-neutral-800 md:cursor-default cursor-pointer"
-                  onClick={() => { if (typeof window !== "undefined" && window.innerWidth < 768) { setSelectedBooking(b); setIsDialogOpen(true); setIsCancelConfirmOpen(false); } }}
+                  onClick={() => { if (typeof globalThis !== "undefined" && globalThis.innerWidth < 768) { setSelectedBooking(b); setIsDialogOpen(true); setIsCancelConfirmOpen(false); } }}
                 >
                   <td className="px-4 py-2">{datum}</td>
                   <td className="px-4 py-2">{zeit}</td>

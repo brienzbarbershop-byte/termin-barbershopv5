@@ -1,9 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../lib/prisma";
 import Link from "next/link";
 import Progress from "@/components/ui/progress";
 export const dynamic = "force-dynamic";
-
-const prisma = new PrismaClient();
 
 export default async function AdminOverview() {
   const now = new Date();
