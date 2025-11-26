@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { PrismaClient, BookingStatus } from "@prisma/client";
+import { requireAdmin } from "../../../lib/auth";
 import { randomUUID } from "node:crypto";
 import { sendBookingConfirmation } from "../../../lib/email";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireAdmin();
+  if (auth) return auth;
   try {
-    const bookings = await prisma.booking.findMany({ include: { service: true }, orderBy: { date: "desc" } });
+    const url = new URL(req.url);
+    const page = Number.parseInt(url.searchParams.get("page") || "1", 10);
+    const pageSize = Number.parseInt(url.searchParams.get("pageSize") || "50", 10);
+    const take = Math.min(Math.max(pageSize, 1), 200);
+    const skip = Math.max((page - 1) * take, 0);
+    const bookings = await prisma.booking.findMany({ include: { service: true }, orderBy: { date: "desc" }, take, skip });
     return NextResponse.json(bookings, { status: 200 });
   } catch {
     return NextResponse.json({ error: "Failed to load bookings" }, { status: 500 });

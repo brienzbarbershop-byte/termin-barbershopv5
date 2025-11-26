@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../../lib/prisma";
 
 function parseDateParam(dateStr: string | null): { start: Date; end: Date } | null {
   if (!dateStr) return null;

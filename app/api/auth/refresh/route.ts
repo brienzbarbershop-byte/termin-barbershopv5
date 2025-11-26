@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { verifyAdminToken, setAdminCookie } from "../../../../lib/auth";
 
 export async function POST() {
   const c = await cookies();
-  const s = c.get("admin_session");
-  if (!s) {
-    return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
-  }
+  const raw = c.get("admin_session")?.value;
+  const ok = verifyAdminToken(raw || null);
+  if (!ok) return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
   const res = NextResponse.json({ ok: true }, { status: 200 });
-  res.cookies.set("admin_session", "1", {
-    httpOnly: true,
-    sameSite: "strict",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 30 * 60,
-    path: "/",
-  });
+  setAdminCookie(res, 30 * 60);
   return res;
 }

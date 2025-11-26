@@ -30,6 +30,10 @@ model Booking {
   cancellationToken String? @unique @default(uuid())
   consent Boolean @default(false)
   marketingConsent Boolean @default(false)
+
+  @@index([date])
+  @@index([status, date])
+  @@index([clientEmail])
 }
 
 enum BookingStatus {

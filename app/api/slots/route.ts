@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, BookingStatus } from "@prisma/client";
+import { BookingStatus } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 
-const prisma = new PrismaClient();
 
 
 function getZurichTime(date: Date): string {
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
       },
       include: { service: true },
     });
-    const bookedIntervals = bookings.map((b) => {
+    const bookedIntervals: { start: number; end: number }[] = bookings.map((b: typeof bookings[number]) => {
       const startLabel = getZurichTime(new Date(b.date));
       const [hh, mm] = startLabel.split(":");
       const start = Number.parseInt(hh, 10) * 60 + Number.parseInt(mm, 10);
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
       const startOfDay = new Date(`${dateStr}T00:00:00`);
       const endOfDay = new Date(`${dateStr}T23:59:59.999`);
       const blocks = await prisma.blockedSlot.findMany({ where: { date: { gte: startOfDay, lte: endOfDay } } });
-      manualIntervals = blocks.map((b) => ({ start: toMinutes(b.startTime), end: toMinutes(b.endTime) }));
+      manualIntervals = blocks.map((b: typeof blocks[number]) => ({ start: toMinutes(b.startTime), end: toMinutes(b.endTime) }));
     } catch {
       manualIntervals = [];
     }
@@ -95,9 +95,9 @@ export async function GET(req: Request) {
     for (let start = startMin; start < endMin; start += 15) {
       const end = start + serviceDuration;
       const overClosing = end > endMin;
-      const overlaps = bookedIntervals.some((bi) => start < bi.end && end > bi.start);
-      const overlapsBreak = breakIntervals.some((bi) => start < bi.end && end > bi.start);
-      const overlapsManual = manualIntervals.some((bi) => start < bi.end && end > bi.start);
+      const overlaps = bookedIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
+      const overlapsBreak = breakIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
+      const overlapsManual = manualIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
       const label = toLabel(start);
       const past = isToday ? start < nowMinutesZurich : false;
       slots.push({ time: label, isBooked: overClosing || overlaps || overlapsBreak || overlapsManual || past });

@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../../lib/prisma";
 import fs from "node:fs";
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 
-const prisma = new PrismaClient();
+function isComplex(pw: string) {
+  return pw.length >= 12 && /[A-Z]/.test(pw) && /[a-z]/.test(pw) && /\d/.test(pw);
+}
 
 function readAdminPasswordFromFile(): string | undefined {
   try {
@@ -28,32 +30,26 @@ export async function POST(req: Request | NextRequest) {
     }
 
     const config = await prisma.storeConfig.findFirst();
-    const envPassword = process.env.ADMIN_PASSWORD ?? readAdminPasswordFromFile() ?? "barber123";
-    const effectivePassword = config?.adminPassword ?? envPassword;
+    const envHash = process.env.ADMIN_PASSWORD_HASH;
+    const effectivePassword = config?.adminPassword ?? envHash;
+    if (!effectivePassword) {
+      return NextResponse.json({ error: "admin_not_configured" }, { status: 503 });
+    }
     let ok = false;
     try {
       ok = await bcrypt.compare(currentPassword, effectivePassword);
     } catch {
       ok = false;
     }
-    if (!ok && currentPassword === effectivePassword) {
-      try {
-        const migrated = await bcrypt.hash(currentPassword, 10);
-        if (config) {
-          await prisma.storeConfig.update({ where: { id: config.id }, data: { adminPassword: migrated } });
-        } else {
-          await prisma.storeConfig.create({ data: { adminPassword: migrated } });
-        }
-        ok = true;
-      } catch {
-        ok = true;
-      }
-    }
+    // migration path removed: require hash-only
     if (!ok) return NextResponse.json({ error: "Altes Passwort ist ungültig" }, { status: 401 });
 
+    if (!isComplex(newPassword)) {
+      return NextResponse.json({ error: "Passwort zu schwach" }, { status: 400 });
+    }
     try {
       const same = await bcrypt.compare(newPassword, effectivePassword);
-      if (same || newPassword === effectivePassword) {
+      if (same) {
         return NextResponse.json({ error: "Dieses Passwort wurde bereits verwendet" }, { status: 400 });
       }
     } catch {}

@@ -1,14 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { cookies } from "next/headers";
-
-const prisma = new PrismaClient();
-
-async function requireAdmin() {
-  const c = await cookies();
-  const s = c.get("admin_session");
-  if (!s) return NextResponse.json({ ok: false }, { status: 401 });
-}
+import { prisma } from "../../../../lib/prisma";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -16,6 +8,8 @@ export async function GET() {
   const hours = await prisma.workingHours.findMany({ orderBy: { dayOfWeek: "asc" } });
   return NextResponse.json(hours);
 }
+
+// PUT unchanged auth usage
 
 export async function PUT(request: Request) {
   const auth = await requireAdmin();

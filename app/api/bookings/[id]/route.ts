@@ -1,9 +1,11 @@
 import { NextResponse, NextRequest } from "next/server";
-import { PrismaClient, BookingStatus } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { BookingStatus } from "@prisma/client";
+import { prisma } from "../../../../lib/prisma";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if (auth) return auth;
   const p = await params; const id = Number(p.id);
   try {
     await prisma.booking.delete({ where: { id } });
@@ -14,6 +16,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin();
+  if (auth) return auth;
   const { id } = await context.params;
   const idNum = Number(id);
   try {

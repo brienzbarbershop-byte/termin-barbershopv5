@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 
-const prisma = new PrismaClient();
 
 export async function GET() {
   try {
@@ -39,7 +38,7 @@ export async function POST(req: Request) {
       const existing = await prisma.blockedSlot.findMany({ where: { date: { gte: start, lt: end } } });
       const sMin = toMinutes(st);
       const eMin = toMinutes(et);
-      return existing.some((r) => {
+      return existing.some((r: typeof existing[number]) => {
         const rs = toMinutes(r.startTime);
         const re = toMinutes(r.endTime);
         return sMin < re && eMin > rs;

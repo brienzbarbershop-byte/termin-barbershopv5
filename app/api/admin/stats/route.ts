@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../../lib/prisma";
+import { requireAdmin } from "../../../../lib/auth";
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (auth) return auth;
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth(), 1);
   const to = new Date(now.getFullYear(), now.getMonth() + 1, 1);

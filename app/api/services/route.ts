@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { cookies } from "next/headers";
+import { prisma } from "../../../lib/prisma";
+import { requireAdmin } from "../../../lib/auth";
 
-const prisma = new PrismaClient();
-
-async function requireAdmin() {
-  const c = await cookies();
-  const s = c.get("admin_session");
-  if (!s) return NextResponse.json({ ok: false }, { status: 401 });
-}
+// shared auth util
 
 export async function GET() {
   try {
