@@ -131,7 +131,7 @@ export async function POST(req: Request) {
           throw new Error("BLOCKED");
         }
       } catch {}
-      return tx.booking.create({
+      const createdBooking = await tx.booking.create({
         data: {
           serviceId,
           date: when,
@@ -145,6 +145,22 @@ export async function POST(req: Request) {
         },
         include: { service: true },
       });
+      try {
+        const emailLower = String(clientEmail).toLowerCase();
+        const phoneStr = String(clientPhone);
+        const nameStr = String(clientName);
+        await tx.$executeRaw`
+          INSERT INTO "Customer" (email, name, phone, "marketingConsent")
+          VALUES (${emailLower}, ${nameStr}, ${phoneStr}, ${!!marketingConsent})
+          ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, phone = EXCLUDED.phone, "marketingConsent" = EXCLUDED."marketingConsent";
+        `;
+        const rows = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM "Customer" WHERE email = ${emailLower} LIMIT 1`;
+        const cid = rows[0]?.id;
+        if (cid) {
+          await tx.$executeRaw`UPDATE "Booking" SET "customerId" = ${cid} WHERE id = ${createdBooking.id}`;
+        }
+      } catch {}
+      return createdBooking;
     });
     const token = created.cancellationToken || randomUUID();
     try {

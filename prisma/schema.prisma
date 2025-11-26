@@ -30,10 +30,13 @@ model Booking {
   cancellationToken String? @unique @default(uuid())
   consent Boolean @default(false)
   marketingConsent Boolean @default(false)
+  customerId Int?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([status, date])
   @@index([clientEmail])
+  @@index([customerId])
 }
 
 enum BookingStatus {
@@ -67,6 +70,26 @@ model EmailLog {
   recipient String
   subject   String
   status    String
+}
+
+model Customer {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  name             String?
+  phone            String?
+  marketingConsent Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  deletedAt        DateTime?
+  bookings         Booking[]
+
+  @@index([deletedAt])
+}
+
+model Suppression {
+  id        Int      @id @default(autoincrement())
+  emailHash String   @unique
+  createdAt DateTime @default(now())
+  reason    String?
 }
 
 model RecurringBreak {
