@@ -4,7 +4,7 @@ import Link from "next/link";
 
 function fmt(d: Date) {
   const datum = d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Zurich" });
-  const zeit = d.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Zurich" }).replace(".", ":");
+  const zeit = d.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Zurich" }).replaceAll(".", ":");
   return { datum, zeit };
 }
 

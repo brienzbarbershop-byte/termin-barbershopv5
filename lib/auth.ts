@@ -6,7 +6,7 @@ type SessionPayload = { uid: string; exp: number; ver: number };
 
 function base64url(input: Buffer | string) {
   const buf = Buffer.isBuffer(input) ? input : Buffer.from(input);
-  return buf.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return buf.toString("base64").replaceAll("=", "").replaceAll("+", "-").replaceAll("/", "_");
 }
 
 function getSecret(): string {
@@ -33,7 +33,7 @@ export function verifyAdminToken(token: string | undefined | null): SessionPaylo
   const expected = base64url(crypto.createHmac("sha256", getSecret()).update(data).digest());
   if (s !== expected) return null;
   try {
-    const payload = JSON.parse(Buffer.from(p.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8")) as SessionPayload;
+    const payload = JSON.parse(Buffer.from(p.replaceAll("-", "+").replaceAll("_", "/"), "base64").toString("utf8")) as SessionPayload;
     if (!payload || typeof payload.exp !== "number" || payload.uid !== "admin") return null;
     if (payload.exp <= Math.floor(Date.now() / 1000)) return null;
     return payload;
@@ -59,4 +59,3 @@ export function setAdminCookie(res: NextResponse, ttlSeconds: number) {
     path: "/",
   });
 }
-

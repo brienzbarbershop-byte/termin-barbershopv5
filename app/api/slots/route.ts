@@ -11,7 +11,7 @@ function getZurichTime(date: Date): string {
     minute: "2-digit",
     hour12: false,
   });
-  return s.replace(".", ":");
+  return s.replaceAll(".", ":");
 }
 
 export async function GET(req: Request) {

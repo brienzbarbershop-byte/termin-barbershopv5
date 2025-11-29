@@ -4,7 +4,7 @@ import { sendReminderEmail } from "../../../../lib/email";
 
 function zurichDateTimeParts(d: Date) {
   const dateStr = d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Zurich" });
-  const timeStr = d.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Zurich" }).replace(".", ":");
+  const timeStr = d.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Zurich" }).replaceAll(".", ":");
   return { dateStr, timeStr };
 }
 
