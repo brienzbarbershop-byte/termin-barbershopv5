@@ -52,7 +52,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
       const a = hours[d];
       const b = initialMap[d];
       if (!a || !b) return true;
-      if (a.isOpen !== b.isOpen || a.startTime !== b.startTime || a.endTime !== b.endTime || (a.breakStart || "") !== (b.breakStart || "") || (a.breakEnd || "") !== (b.breakEnd || "")) return true;
+      if (a.isOpen !== b.isOpen || a.startTime !== b.startTime || a.endTime !== b.endTime || (a.breakStart ?? "") !== (b.breakStart ?? "") || (a.breakEnd ?? "") !== (b.breakEnd ?? "")) return true;
     }
     return false;
   }
@@ -66,7 +66,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
       if (a.isOpen !== b.isOpen) {
         if (a.isOpen) list.push(`${names[d]}: geschlossen -> geöffnet ${a.startTime}-${a.endTime}`);
         else list.push(`${names[d]}: geöffnet ${b.startTime}-${b.endTime} -> geschlossen`);
-      } else if (a.isOpen && (a.startTime !== b.startTime || a.endTime !== b.endTime || (a.breakStart || "") !== (b.breakStart || "") || (a.breakEnd || "") !== (b.breakEnd || ""))) {
+      } else if (a.isOpen && (a.startTime !== b.startTime || a.endTime !== b.endTime || (a.breakStart ?? "") !== (b.breakStart ?? "") || (a.breakEnd ?? "") !== (b.breakEnd ?? ""))) {
         const oldBreak = b.breakStart && b.breakEnd ? `, Pause ${b.breakStart}-${b.breakEnd}` : "";
         const newBreak = a.breakStart && a.breakEnd ? `, Pause ${a.breakStart}-${a.breakEnd}` : "";
         list.push(`${names[d]}: ${b.startTime}-${b.endTime}${oldBreak} -> ${a.startTime}-${a.endTime}${newBreak}`);
@@ -86,7 +86,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
     });
     setSaving(false);
     if (!r.ok) {
-      const ct = r.headers.get("content-type") || "";
+      const ct = r.headers.get("content-type") ?? "";
       let msg = "";
       if (ct.includes("application/json")) {
         try {
@@ -172,7 +172,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
                 <td className="px-4 py-2 hidden md:table-cell">
                   <select
                     className="px-2 py-1 rounded bg-black border border-neutral-700 text-white"
-                    value={h.breakStart || ""}
+                    value={h.breakStart ?? ""}
                     disabled={!h.isOpen}
                     onChange={(e) => setHours((prev) => ({ ...prev, [d]: { ...prev[d], breakStart: e.target.value || null } }))}
                   >
@@ -185,7 +185,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
                 <td className="px-4 py-2 hidden md:table-cell">
                   <select
                     className="px-2 py-1 rounded bg-black border border-neutral-700 text-white"
-                    value={h.breakEnd || ""}
+                    value={h.breakEnd ?? ""}
                     disabled={!h.isOpen}
                     onChange={(e) => setHours((prev) => ({ ...prev, [d]: { ...prev[d], breakEnd: e.target.value || null } }))}
                   >
@@ -201,7 +201,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
                 <td className="px-4 py-2">
                   <select
                     className="px-2 py-1 rounded bg-black border border-neutral-700 text-white w-[110px] md:w-auto"
-                    value={h.breakStart || ""}
+                    value={h.breakStart ?? ""}
                     disabled={!h.isOpen}
                     onChange={(e) => setHours((prev) => ({ ...prev, [d]: { ...prev[d], breakStart: e.target.value || null } }))}
                   >
@@ -214,7 +214,7 @@ export default function HoursClient({ initial, initialBlocks }: Readonly<{ initi
                 <td className="px-4 py-2">
                   <select
                     className="px-2 py-1 rounded bg-black border border-neutral-700 text-white w-[110px] md:w-auto"
-                    value={h.breakEnd || ""}
+                    value={h.breakEnd ?? ""}
                     disabled={!h.isOpen}
                     onChange={(e) => setHours((prev) => ({ ...prev, [d]: { ...prev[d], breakEnd: e.target.value || null } }))}
                   >
@@ -344,7 +344,7 @@ function SlotBlockerAdmin({ initial }: Readonly<{ initial: { id: number; date: s
       const byExact = !filterDate || dk === filterDate;
       const byStart = !filterStart || dk >= filterStart;
       const byEnd = !filterEnd || dk <= filterEnd;
-      const byReason = !filterReason || (b.reason || "").toLowerCase().includes(filterReason.toLowerCase());
+      const byReason = !filterReason || (b.reason ?? "").toLowerCase().includes(filterReason.toLowerCase());
       return byExact && byStart && byEnd && byReason;
     });
     return arr.sort((a, b) => {
@@ -497,7 +497,7 @@ function SlotBlockerAdmin({ initial }: Readonly<{ initial: { id: number; date: s
                 <tr key={b.id} className="border-t border-neutral-800">
                   <td className="px-3 py-2">{datum}</td>
                   <td className="px-3 py-2">{b.startTime}–{b.endTime}</td>
-                  <td className="px-3 py-2">{b.reason || ""}</td>
+                  <td className="px-3 py-2">{b.reason ?? ""}</td>
                   <td className="px-3 py-2"><button onClick={() => { setConfirmId(b.id); setConfirmOpen(true); }} className="px-3 py-1 rounded bg-red-600 text-white">X</button></td>
                 </tr>
               );

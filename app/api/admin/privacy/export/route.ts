@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   if (auth) return auth;
   try {
     const body = await req.json();
-    const email = String(body?.email || "").toLowerCase();
+    const email = String((body?.email ?? "")).toLowerCase();
     if (!email) return NextResponse.json({ error: "invalid email" }, { status: 400 });
     const [customer] = await prisma.$queryRaw<unknown[]>`
       SELECT id, email, name, phone, marketingConsent, createdAt, deletedAt FROM "Customer" WHERE email = ${email} LIMIT 1
@@ -25,4 +25,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "failed" }, { status: 500 });
   }
 }
-

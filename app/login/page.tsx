@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 const IntroSplash = dynamic(() => import("@/components/ui/IntroSplash"), { ssr: false });
@@ -12,6 +12,12 @@ export default function Login() {
   const [forgotStatus, setForgotStatus] = useState<string>("");
   const [caps, setCaps] = useState(false);
   const router = useRouter();
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowForm(true), 4700);
+    return () => clearTimeout(t);
+  }, []);
 
   async function submit() {
     setLoading(true);
@@ -41,8 +47,9 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center">
+      <IntroSplash variant="admin" always onDone={() => setShowForm(true)} />
+      {showForm && (
       <div className="w-full max-w-sm p-6 rounded-lg border border-[#C5A059] bg-black">
-        <IntroSplash variant="admin" always />
         <h1 className="text-xl text-[#C5A059] mb-4">Admin Login</h1>
         <form
           onSubmit={(e) => { e.preventDefault(); if (!loading && password) submit(); }}
@@ -81,6 +88,7 @@ export default function Login() {
         </div>
         {forgotStatus && <div className="mt-2 text-sm">{forgotStatus}</div>}
       </div>
+      )}
     </div>
   );
 }

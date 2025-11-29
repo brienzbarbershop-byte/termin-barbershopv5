@@ -11,13 +11,13 @@ function zurichDateTimeParts(d: Date) {
 export async function GET(req: Request) {
   const now = new Date();
   const params = new URL(req.url).searchParams;
-  const hrs = Number.parseInt(params.get("hours") || "3", 10);
+  const hrs = Number.parseInt(params.get("hours") ?? "3", 10);
   const upper = new Date(now.getTime() + Math.max(1, Math.min(48, hrs)) * 60 * 60 * 1000);
   let sentCount = 0;
   const dry = params.get("dry") === "true";
   const debug = params.get("debug") === "true";
   const matched: { id: number; date: string }[] = [];
-  const checkId = Number.parseInt(params.get("checkId") || "0", 10);
+  const checkId = Number.parseInt(params.get("checkId") ?? "0", 10);
   if (checkId > 0) {
     try {
       const rows = (await prisma.$queryRaw<{ reminderSent: boolean }[]>`
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
         const when = new Date(b.date);
         if (debug) matched.push({ id: b.id, date: b.date.toISOString?.() ?? String(b.date) });
         const { dateStr, timeStr } = zurichDateTimeParts(when);
-        const ok = dry ? true : await sendReminderEmail({ to: b.clientEmail, name: b.clientName, date: dateStr, time: timeStr, serviceName: b.serviceName || "" });
+        const ok = dry ? true : await sendReminderEmail({ to: b.clientEmail, name: b.clientName, date: dateStr, time: timeStr, serviceName: b.serviceName ?? "" });
         if (ok) {
             try {
               await prisma.$executeRaw`

@@ -6,8 +6,8 @@ export async function GET(req: Request) {
   const auth = await requireAdmin();
   if (auth) return auth;
   const url = new URL(req.url);
-  const page = Number.parseInt(url.searchParams.get("page") || "1", 10);
-  const pageSize = Number.parseInt(url.searchParams.get("pageSize") || "50", 10);
+  const page = Number.parseInt(url.searchParams.get("page") ?? "1", 10);
+  const pageSize = Number.parseInt(url.searchParams.get("pageSize") ?? "50", 10);
   const take = Math.min(Math.max(pageSize, 1), 200);
   const skip = Math.max((page - 1) * take, 0);
   try {
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   if (auth) return auth;
   try {
     const body = await req.json();
-    const email = String(body?.email || "").toLowerCase();
+    const email = String((body?.email ?? "")).toLowerCase();
     const name = typeof body?.name === "string" ? body.name : null;
     const phone = typeof body?.phone === "string" ? body.phone : null;
     const marketingConsent = !!body?.marketingConsent;
@@ -51,7 +51,7 @@ export async function DELETE(req: Request) {
   if (auth) return auth;
   try {
     const url = new URL(req.url);
-    const email = String(url.searchParams.get("email") || "").toLowerCase();
+    const email = String((url.searchParams.get("email") ?? "")).toLowerCase();
     if (!email) return NextResponse.json({ error: "invalid email" }, { status: 400 });
     await prisma.$executeRaw`
       UPDATE "Customer" SET "deletedAt" = NOW() WHERE email = ${email};
@@ -61,4 +61,3 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "failed" }, { status: 500 });
   }
 }
-

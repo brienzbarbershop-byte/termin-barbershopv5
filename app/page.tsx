@@ -112,7 +112,7 @@ export default function Home() {
     if (res.ok) {
       setStep(5);
     } else if (res.status === 409) {
-      const err = String((data as { error?: string })?.error || "");
+      const err = String(((data as { error?: string })?.error ?? ""));
       let msg = "Fehler";
       if (err === "CONFLICT") msg = "Es tut uns leid, dieser Termin wurde gerade vergeben. Bitte wählen Sie eine andere Zeit.";
       else if (err === "BLOCKED" || err === "OUT_OF_HOURS") msg = "Der Zeitbereich ist zu kurz für diese Dienstleistung";
@@ -253,7 +253,7 @@ export default function Home() {
           <label className="flex items-center gap-2 text-sm w-full"><input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="accent-[#C5A059]" />Ich möchte Angebote erhalten</label>
           <div className="flex gap-4 w-full">
             <button onClick={() => setStep(3)} className="px-4 py-2 rounded border border-neutral-700">Zurück</button>
-            <button disabled={isLoading || !clientName || !clientEmail || !clientPhone || !isValidPhoneNumber(clientPhone || "") || !!emailError || !isValidEmail(clientEmail) || !consent} onClick={bookAppointment} className="px-4 py-3 rounded bg-[#C5A059] text-black w-full disabled:opacity-50 disabled:cursor-not-allowed text-base font-semibold">Kostenpflichtig buchen</button>
+            <button disabled={isLoading || !clientName || !clientEmail || !clientPhone || !isValidPhoneNumber(clientPhone ?? "") || !!emailError || !isValidEmail(clientEmail) || !consent} onClick={bookAppointment} className="px-4 py-3 rounded bg-[#C5A059] text-black w-full disabled:opacity-50 disabled:cursor-not-allowed text-base font-semibold">Kostenpflichtig buchen</button>
           </div>
           {status && <div className="text-sm">{status}</div>}
         </div>

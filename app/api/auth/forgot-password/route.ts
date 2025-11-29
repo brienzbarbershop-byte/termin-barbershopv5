@@ -12,9 +12,9 @@ export async function POST() {
     const updated = existing
       ? await prisma.storeConfig.update({ where: { id: existing.id }, data: { resetToken: token, resetTokenExpiry: expiry } })
       : await prisma.storeConfig.create({ data: { resetToken: token, resetTokenExpiry: expiry } });
-    const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const resetLink = `${base}/auth/reset/${token}`;
-    const to = process.env.ADMIN_CONTACT_EMAIL || "kontakt@barbershop-brienz.ch";
+    const to = process.env.ADMIN_CONTACT_EMAIL ?? "kontakt@barbershop-brienz.ch";
     try { await sendAdminResetEmail({ to, resetUrl: resetLink }); } catch {}
     return NextResponse.json({ ok: true, id: updated.id }, { status: 200 });
   } catch (e) {

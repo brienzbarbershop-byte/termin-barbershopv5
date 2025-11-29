@@ -8,8 +8,8 @@ function fmt(d: Date) {
   return { datum, zeit };
 }
 
-export default async function ManagePage({ params }: { params: { token: string } }) {
-  const { token } = params;
+export default async function ManagePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
   const rows = (await prisma.$queryRaw<{ id: number; date: Date; status: string; service_name: string | null; price_chf: number | null }[]>`
     SELECT b.id, b.date, b.status, s.name as service_name, s."priceCHF" as price_chf
     FROM "Booking" b LEFT JOIN "Service" s ON s.id = b."serviceId"

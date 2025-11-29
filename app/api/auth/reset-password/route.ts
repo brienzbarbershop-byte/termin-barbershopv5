@@ -8,8 +8,8 @@ import path from "node:path";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const token = String(body?.token || "");
-    const newPassword = String(body?.newPassword || "");
+    const token = String((body?.token ?? ""));
+    const newPassword = String((body?.newPassword ?? ""));
     if (!token || !newPassword) {
       return NextResponse.json({ error: "Fehlende Felder" }, { status: 400 });
     }

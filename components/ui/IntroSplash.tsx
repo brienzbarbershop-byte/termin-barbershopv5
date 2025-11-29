@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-export default function IntroSplash({ variant, always }: Readonly<{ variant: "client" | "admin"; always?: boolean }>) {
+export default function IntroSplash({ variant, always, onDone }: Readonly<{ variant: "client" | "admin"; always?: boolean; onDone?: () => void }>) {
   const [isVisible, setIsVisible] = useState(() => {
     if (always) return true;
     const key = `hasSeenIntro_${variant}`;
@@ -17,6 +17,11 @@ export default function IntroSplash({ variant, always }: Readonly<{ variant: "cl
     try { if (!always) globalThis.sessionStorage.setItem(key, "1"); } catch {}
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [variant, isVisible, always]);
+  useEffect(() => {
+    if (!isVisible) {
+      try { onDone?.(); } catch {}
+    }
+  }, [isVisible, onDone]);
   const src = variant === "admin" ? "/logo_admin.svg" : "/logo.svg";
   return (
     <AnimatePresence>

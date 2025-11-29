@@ -1,5 +1,5 @@
 import { prisma } from "./prisma";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const LOGO_URL = `${APP_URL}/logo.png`;
 
 export async function sendEmail({ to, subject, html, name }: { to: string; subject: string; html: string; name?: string }) {
@@ -16,11 +16,11 @@ export async function sendEmail({ to, subject, html, name }: { to: string; subje
     const api = new Brevo.TransactionalEmailsApi();
     api.authentications["apiKey"].apiKey = apiKey;
 
-    const title = process.env.BREVO_SENDER_NAME || "Barber Shop – Brienz";
+    const title = process.env.BREVO_SENDER_NAME ?? "Barber Shop – Brienz";
     const payload = new Brevo.SendSmtpEmail();
     payload.subject = subject;
     payload.htmlContent = html;
-    payload.sender = { name: title, email: process.env.BREVO_SENDER_EMAIL || "kontakt@barbershop-brienz.ch" };
+    payload.sender = { name: title, email: process.env.BREVO_SENDER_EMAIL ?? "kontakt@barbershop-brienz.ch" };
     payload.to = [{ email: to, name: name || to }];
 
     await api.sendTransacEmail(payload);
@@ -35,8 +35,8 @@ export async function sendEmail({ to, subject, html, name }: { to: string; subje
 export async function sendBookingConfirmation({ email, name, date, serviceName, token }: { email: string; name: string; date: Date; serviceName?: string | null; token?: string }) {
   const d = new Intl.DateTimeFormat("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
   const subj = "Terminbestätigung";
-  const title = process.env.BREVO_SENDER_NAME || "Barber Shop – Brienz";
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const title = process.env.BREVO_SENDER_NAME ?? "Barber Shop – Brienz";
+  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const manageUrl = token ? `${base}/booking/manage/${token}` : base;
   const html = `
       <div style="font-family: Arial, sans-serif; background:#0f0f0f; color:#fff; padding:24px;">
@@ -58,18 +58,18 @@ export async function sendBookingConfirmation({ email, name, date, serviceName, 
 }
 
 export async function sendAdminResetEmail({ to, resetUrl }: { to: string; resetUrl: string }) {
-  const subj = "Reset hasła do panelu Admina";
+  const subj = "Passwort zurücksetzen – Admin‑Panel";
   const html = `
       <div style="font-family: Arial, sans-serif; background:#0f0f0f; color:#fff; padding:24px;">
         <div style="max-width:560px; margin:0 auto; border:1px solid #C5A059; border-radius:12px; padding:24px; background:#141414;">
           <img src="${LOGO_URL}" alt="Barber Shop Brienz Logo" width="150" style="display: block; margin: 20px auto;" />
-          <h2 style="margin:0 0 12px; color:#C5A059;">Reset hasła</h2>
-          <p style="margin:0 0 12px;">Kliknij, aby zresetować hasło administratora:</p>
+          <h2 style="margin:0 0 12px; color:#C5A059;">Passwort zurücksetzen</h2>
+          <p style="margin:0 0 12px;">Klicken Sie auf den folgenden Link, um das Administrator‑Passwort zurückzusetzen:</p>
           <div style="margin:20px 0;">
-            <a href="${resetUrl}" style="display:inline-block; padding:10px 14px; background:#C5A059; color:#000; text-decoration:none; border-radius:8px; font-weight:600;">Resetuj hasło</a>
+            <a href="${resetUrl}" style="display:inline-block; padding:10px 14px; background:#C5A059; color:#000; text-decoration:none; border-radius:8px; font-weight:600;">Passwort zurücksetzen</a>
           </div>
           <hr style="border-color:#2a2a2a; margin:20px 0;" />
-          <p style="margin:0; font-size:12px; color:#bdbdbd;">Jeśli nie inicjowałeś resetu, zignoruj tę wiadomość.</p>
+          <p style="margin:0; font-size:12px; color:#bdbdbd;">Wenn Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese Nachricht.</p>
         </div>
       </div>
     `;

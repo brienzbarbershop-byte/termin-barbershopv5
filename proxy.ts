@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function proxy(req: NextRequest) {
-  const host = req.headers.get("host") || "";
+  const host = req.headers.get("host") ?? "";
   const url = req.nextUrl;
   const pathname = url.pathname;
 

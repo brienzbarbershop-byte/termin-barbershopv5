@@ -12,8 +12,8 @@ export async function GET(req: Request) {
   if (auth) return auth;
   try {
     const url = new URL(req.url);
-    const page = Number.parseInt(url.searchParams.get("page") || "1", 10);
-    const pageSize = Number.parseInt(url.searchParams.get("pageSize") || "50", 10);
+    const page = Number.parseInt(url.searchParams.get("page") ?? "1", 10);
+    const pageSize = Number.parseInt(url.searchParams.get("pageSize") ?? "50", 10);
     const take = Math.min(Math.max(pageSize, 1), 200);
     const skip = Math.max((page - 1) * take, 0);
     const bookings = await prisma.booking.findMany({ include: { service: true }, orderBy: { date: "desc" }, take, skip });
@@ -38,18 +38,18 @@ export async function POST(req: Request) {
         throw new Error("DATE_TOO_FAR");
       }
       const np = new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date());
-      const ny = Number(np.find((p) => p.type === "year")?.value || today.getFullYear());
-      const nm = Number(np.find((p) => p.type === "month")?.value || (today.getMonth() + 1));
-      const nd = Number(np.find((p) => p.type === "day")?.value || today.getDate());
-      const nh = Number(np.find((p) => p.type === "hour")?.value || today.getHours());
-      const nmin = Number(np.find((p) => p.type === "minute")?.value || today.getMinutes());
+      const ny = Number(np.find((p) => p.type === "year")?.value ?? today.getFullYear());
+      const nm = Number(np.find((p) => p.type === "month")?.value ?? (today.getMonth() + 1));
+      const nd = Number(np.find((p) => p.type === "day")?.value ?? today.getDate());
+      const nh = Number(np.find((p) => p.type === "hour")?.value ?? today.getHours());
+      const nmin = Number(np.find((p) => p.type === "minute")?.value ?? today.getMinutes());
       const nowZurich = new Date(ny, nm - 1, nd, nh, nmin, 0, 0);
       const wp = new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(when);
-      const wy = Number(wp.find((p) => p.type === "year")?.value || when.getFullYear());
-      const wm = Number(wp.find((p) => p.type === "month")?.value || (when.getMonth() + 1));
-      const wd = Number(wp.find((p) => p.type === "day")?.value || when.getDate());
-      const whh = Number(wp.find((p) => p.type === "hour")?.value || when.getHours());
-      const wmm = Number(wp.find((p) => p.type === "minute")?.value || when.getMinutes());
+      const wy = Number(wp.find((p) => p.type === "year")?.value ?? when.getFullYear());
+      const wm = Number(wp.find((p) => p.type === "month")?.value ?? (when.getMonth() + 1));
+      const wd = Number(wp.find((p) => p.type === "day")?.value ?? when.getDate());
+      const whh = Number(wp.find((p) => p.type === "hour")?.value ?? when.getHours());
+      const wmm = Number(wp.find((p) => p.type === "minute")?.value ?? when.getMinutes());
       const whenZurich = new Date(wy, wm - 1, wd, whh, wmm, 0, 0);
       if (whenZurich.getTime() < nowZurich.getTime()) {
         throw new Error("PAST_TIME");
@@ -69,8 +69,8 @@ export async function POST(req: Request) {
       };
       const zurichMinutes = (d: Date) => {
         const parts = new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", hour: "2-digit", minute: "2-digit" }).formatToParts(d);
-        const hh = Number(parts.find((p) => p.type === "hour")?.value || d.getHours());
-        const mm = Number(parts.find((p) => p.type === "minute")?.value || d.getMinutes());
+        const hh = Number(parts.find((p) => p.type === "hour")?.value ?? d.getHours());
+        const mm = Number(parts.find((p) => p.type === "minute")?.value ?? d.getMinutes());
         return hh * 60 + mm;
       };
       if (!wh || !wh.isOpen) {
@@ -168,7 +168,7 @@ export async function POST(req: Request) {
       }
       return createdBooking;
     });
-    const token = created.cancellationToken || randomUUID();
+    const token = created.cancellationToken ?? randomUUID();
     try {
       await sendBookingConfirmation({ email: created.clientEmail, name: created.clientName, date: new Date(created.date), serviceName: created.service?.name, token });
     } catch (e) {
