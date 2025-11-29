@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-export default function CancelButton({ id }: { id: number }) {
+export default function CancelButton({ id }: Readonly<{ id: number }>) {
   const [loading, setLoading] = useState(false);
   async function cancel() {
     setLoading(true);

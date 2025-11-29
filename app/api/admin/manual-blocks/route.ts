@@ -43,7 +43,7 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const idStr = searchParams.get("id");
-    const id = idStr ? Number.parseInt(idStr, 10) : NaN;
+    const id = idStr ? Number.parseInt(idStr, 10) : Number.NaN;
     if (!id || Number.isNaN(id)) return NextResponse.json({ error: "invalid id" }, { status: 400 });
     await prisma.blockedSlot.delete({ where: { id } });
     return NextResponse.json({ ok: true }, { status: 200 });

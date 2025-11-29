@@ -27,8 +27,9 @@ export function signAdminToken(ttlSeconds: number): string {
 }
 
 export function verifyAdminToken(token: string | undefined | null): SessionPayload | null {
-  if (!token || token.split(".").length !== 3) return null;
-  const [h, p, s] = token.split(".");
+  const parts = token?.split(".");
+  if (!parts || parts.length !== 3) return null;
+  const [h, p, s] = parts;
   const data = `${h}.${p}`;
   const expected = base64url(crypto.createHmac("sha256", getSecret()).update(data).digest());
   if (s !== expected) return null;
@@ -45,7 +46,7 @@ export function verifyAdminToken(token: string | undefined | null): SessionPaylo
 export async function requireAdmin(): Promise<NextResponse | undefined> {
   const c = await cookies();
   const raw = c.get("admin_session")?.value;
-  const ok = verifyAdminToken(raw || null);
+  const ok = verifyAdminToken(raw ?? null);
   if (!ok) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 }
 

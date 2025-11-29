@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import bcrypt from "bcryptjs";
-import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 
 function isComplex(pw: string) {

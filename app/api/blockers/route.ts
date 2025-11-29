@@ -1,6 +1,29 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../lib/prisma";
 
+const toMinutes = (hm: string) => { const [hh, mm] = hm.split(":").map((x) => Number.parseInt(x, 10)); return hh * 60 + mm; };
+function makeDateTime(ds: string, ts: string): Date {
+  const base = new Date(ds);
+  const [hh, mm] = ts.split(":").map((x) => Number.parseInt(x, 10));
+  if (Number.isNaN(base.getTime()) || Number.isNaN(hh) || Number.isNaN(mm)) return new Date(Number.NaN);
+  const dt = new Date(base);
+  dt.setHours(hh, mm, 0, 0);
+  return dt;
+}
+function dayRange(dt: Date) {
+  return { start: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()), end: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1) };
+}
+async function hasOverlap(curDay: Date, st: string, et: string) {
+  const { start, end } = dayRange(curDay);
+  const existing = await prisma.blockedSlot.findMany({ where: { date: { gte: start, lt: end } } });
+  const sMin = toMinutes(st);
+  const eMin = toMinutes(et);
+  return existing.some((r: typeof existing[number]) => {
+    const rs = toMinutes(r.startTime);
+    const re = toMinutes(r.endTime);
+    return sMin < re && eMin > rs;
+  });
+}
 
 export async function GET() {
   try {
@@ -21,37 +44,16 @@ export async function POST(req: Request) {
     if (!date || Number.isNaN(d.getTime()) || !startTime || !endTime) {
       return NextResponse.json({ error: "invalid input" }, { status: 400 });
     }
-    const toMinutes = (hm: string) => { const [hh, mm] = hm.split(":").map((x) => Number.parseInt(x, 10)); return hh * 60 + mm; };
-    function makeDateTime(ds: string, ts: string): Date {
-      const base = new Date(ds);
-      const [hh, mm] = ts.split(":").map((x) => Number.parseInt(x, 10));
-      if (Number.isNaN(base.getTime()) || Number.isNaN(hh) || Number.isNaN(mm)) return new Date(NaN);
-      const dt = new Date(base);
-      dt.setHours(hh, mm, 0, 0);
-      return dt;
-    }
-    function dayRange(dt: Date) {
-      return { start: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()), end: new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1) };
-    }
-    async function hasOverlap(curDay: Date, st: string, et: string) {
-      const { start, end } = dayRange(curDay);
-      const existing = await prisma.blockedSlot.findMany({ where: { date: { gte: start, lt: end } } });
-      const sMin = toMinutes(st);
-      const eMin = toMinutes(et);
-      return existing.some((r: typeof existing[number]) => {
-        const rs = toMinutes(r.startTime);
-        const re = toMinutes(r.endTime);
-        return sMin < re && eMin > rs;
-      });
-    }
+    
+    
     if (endDate) {
       const ed = new Date(endDate);
-      if (!endDate || Number.isNaN(ed.getTime())) {
+      if (Number.isNaN(ed.getTime())) {
         return NextResponse.json({ error: "invalid input" }, { status: 400 });
       }
       const startDT = makeDateTime(date, startTime);
       const endDT = makeDateTime(endDate, endTime);
-      if (!(endDT.getTime() > startDT.getTime())) {
+      if (endDT.getTime() <= startDT.getTime()) {
         return NextResponse.json({ error: "Startzeit muss vor der Endzeit liegen" }, { status: 400 });
       }
       const results: unknown[] = [];
@@ -93,7 +95,7 @@ export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const idStr = searchParams.get("id");
-    const id = idStr ? Number.parseInt(idStr, 10) : NaN;
+    const id = idStr ? Number.parseInt(idStr, 10) : Number.NaN;
     if (!id || Number.isNaN(id)) return NextResponse.json({ error: "invalid id" }, { status: 400 });
     await prisma.blockedSlot.delete({ where: { id } });
     return NextResponse.json({ ok: true }, { status: 200 });

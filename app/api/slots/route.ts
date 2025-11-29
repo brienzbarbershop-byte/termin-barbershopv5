@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     const parts = dateStr.split("-").map((x) => Number.parseInt(x, 10));
     const dow = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])).getUTCDay();
     const wh = await prisma.workingHours.findUnique({ where: { dayOfWeek: dow } });
-    if (!wh || !wh.isOpen) return NextResponse.json([], { status: 200 });
+    if (!wh?.isOpen) return NextResponse.json([], { status: 200 });
 
     const toMinutes = (hm: string) => {
       const [hh, mm] = hm.split(":").map((x) => Number.parseInt(x, 10));
@@ -84,11 +84,11 @@ export async function GET(req: Request) {
 
     const now = new Date();
     const nowParts = new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(now);
-    const ny = Number(nowParts.find((p) => p.type === "year")?.value || now.getFullYear());
-    const nm = Number(nowParts.find((p) => p.type === "month")?.value || (now.getMonth() + 1));
-    const nd = Number(nowParts.find((p) => p.type === "day")?.value || now.getDate());
-    const nh = Number(nowParts.find((p) => p.type === "hour")?.value || now.getHours());
-    const nmin = Number(nowParts.find((p) => p.type === "minute")?.value || now.getMinutes());
+    const ny = Number(nowParts.find((p) => p.type === "year")?.value ?? now.getFullYear());
+    const nm = Number(nowParts.find((p) => p.type === "month")?.value ?? (now.getMonth() + 1));
+    const nd = Number(nowParts.find((p) => p.type === "day")?.value ?? now.getDate());
+    const nh = Number(nowParts.find((p) => p.type === "hour")?.value ?? now.getHours());
+    const nmin = Number(nowParts.find((p) => p.type === "minute")?.value ?? now.getMinutes());
     const todayZurich = `${String(ny)}-${String(nm).padStart(2, "0")}-${String(nd).padStart(2, "0")}`;
     const nowMinutesZurich = nh * 60 + nmin;
     const isToday = dateStr === todayZurich;

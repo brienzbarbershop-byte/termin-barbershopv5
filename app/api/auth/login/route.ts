@@ -9,10 +9,10 @@ const attempts = new Map<string, { count: number; until?: number }>();
 export async function POST(req: Request) {
   const body = await req.json();
   const { password } = body as { password?: string };
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const now = Date.now();
   const entry = attempts.get(ip);
-  if (entry && entry.until && now < entry.until) {
+  if (entry?.until && now < entry.until) {
     return NextResponse.json({ ok: false, error: "too_many_attempts" }, { status: 429 });
   }
   const config = await prisma.storeConfig.findFirst();

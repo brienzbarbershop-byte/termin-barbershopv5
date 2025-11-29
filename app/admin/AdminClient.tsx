@@ -81,11 +81,12 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
     const clientHaystack = `${b.clientName} ${b.clientPhone} ${b.clientEmail ?? ""}`.toLowerCase();
     const serviceHaystack = `${b.service?.name ?? ""}`.toLowerCase();
     const passClient = filterClient ? clientHaystack.includes(filterClient.toLowerCase()) : true;
-    const passDate = filterDateRange
-      ? dateStr >= filterDateRange.start && dateStr <= filterDateRange.end
-      : filterDate
-        ? dateStr === filterDate
-        : true;
+    let passDate = true;
+    if (filterDateRange) {
+      passDate = dateStr >= filterDateRange.start && dateStr <= filterDateRange.end;
+    } else if (filterDate) {
+      passDate = dateStr === filterDate;
+    }
     const passService = filterService === "ALL" ? true : serviceHaystack === filterService.toLowerCase();
     const passStatus = filterStatus === "ALL" ? true : b.status === filterStatus;
     return passClient && passDate && passService && passStatus;
@@ -387,7 +388,7 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
                       <div className="grid grid-cols-4 gap-2">
                         <button
                           className="aspect-square flex items-center justify-center text-center md:text-base text-sm rounded bg-red-600 text-white disabled:opacity-50"
-                          disabled={!selectedBooking || selectedBooking.status !== "BESTAETIGT"}
+                          disabled={selectedBooking?.status !== "BESTAETIGT"}
                           onClick={() => setIsCancelConfirmOpen(true)}
                         >
                           Termin stornieren
@@ -410,7 +411,7 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
                         </button>
                         <button
                           className="aspect-square flex items-center justify-center text-center md:text-base text-sm rounded bg-black text-white border border-neutral-700 hover:bg-neutral-900 disabled:opacity-50"
-                          disabled={!selectedBooking || selectedBooking.status !== "BESTAETIGT"}
+                          disabled={selectedBooking?.status !== "BESTAETIGT"}
                           onClick={async () => {
                             if (!selectedBooking) return;
                             const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ABGESCHLOSSEN" }) });

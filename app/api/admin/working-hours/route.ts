@@ -68,16 +68,16 @@ export async function PUT(request: Request) {
       const rule = valid.find((x) => Number(x?.dayOfWeek) === wd);
       if (rule) {
         const isOpen = Boolean(rule.isOpen);
-        const startTime = String(rule.startTime || "09:00");
-        const endTime = String(rule.endTime || "18:00");
-        if (!isOpen) {
-          conflicts.push({ clientName: b.clientName, date: dateStr, time: timeStr, phone: b.clientPhone, email: b.clientEmail });
-        } else {
+        const startTime = String(rule.startTime ?? "09:00");
+        const endTime = String(rule.endTime ?? "18:00");
+        if (isOpen) {
           const t = timeStr;
           const inRange = t >= startTime && t <= endTime;
           if (!inRange) {
             conflicts.push({ clientName: b.clientName, date: dateStr, time: timeStr, phone: b.clientPhone, email: b.clientEmail });
           }
+        } else {
+          conflicts.push({ clientName: b.clientName, date: dateStr, time: timeStr, phone: b.clientPhone, email: b.clientEmail });
         }
       }
     }
