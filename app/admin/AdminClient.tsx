@@ -102,6 +102,43 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
     return arr;
   }, [filteredBookings, sortOrder]);
 
+  async function markCompleted() {
+    if (!selectedBooking) return;
+    const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ABGESCHLOSSEN" }) });
+    if (r.ok) {
+      setIsDialogOpen(false);
+      setBookings((prev) => prev.map((p) => (p.id === selectedBooking.id ? { ...p, status: "ABGESCHLOSSEN" } : p)));
+      setSelectedBooking(null);
+      setToastMessage("Als abgeschlossen markiert");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  }
+
+  async function markNoShow() {
+    if (!selectedBooking) return;
+    const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "NO_SHOW" }) });
+    if (r.ok) {
+      setIsDialogOpen(false);
+      setBookings((prev) => prev.map((p) => (p.id === selectedBooking.id ? { ...p, status: "NO_SHOW" } : p)));
+      setSelectedBooking(null);
+      setToastMessage("No Show markiert");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  }
+
+  async function finalCancel() {
+    if (!selectedBooking) return;
+    const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "STORNIERT" }) });
+    if (r.ok) {
+      setIsDialogOpen(false);
+      setIsCancelConfirmOpen(false);
+      setBookings((prev) => prev.map((p) => (p.id === selectedBooking.id ? { ...p, status: "STORNIERT" } : p)));
+      setSelectedBooking(null);
+      setToastMessage("Termin storniert");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  }
+
   return (
     <div className="md:overflow-x-auto overflow-x-hidden">
       {toastMessage && (
@@ -280,20 +317,13 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
                       >
                         <Pencil className="w-4 h-4 mr-2" /> Verwalten
                       </button>
-                      <button
-                        className="px-3 py-1 rounded border border-neutral-700 text-white hover:bg-neutral-800 disabled:opacity-50"
-                        disabled={b.status !== "BESTAETIGT"}
-                        onClick={async () => {
-                          const r = await fetch(`/api/bookings/${b.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ABGESCHLOSSEN" }) });
-                          if (r.ok) {
-                            setBookings((prev) => prev.map((p) => p.id === b.id ? { ...p, status: "ABGESCHLOSSEN" } : p));
-                            setToastMessage("Als abgeschlossen markiert");
-                            setTimeout(() => setToastMessage(null), 3000);
-                          }
-                        }}
-                      >
-                        Abschließen
-                      </button>
+                        <button
+                          className="px-3 py-1 rounded border border-neutral-700 text-white hover:bg-neutral-800 disabled:opacity-50"
+                          disabled={b.status !== "BESTAETIGT"}
+                          onClick={() => { setSelectedBooking(b); setIsDialogOpen(true); setIsCancelConfirmOpen(false); markCompleted(); }}
+                        >
+                          Abschließen
+                        </button>
                     </div>
                   </td>
                 </tr>
@@ -368,18 +398,7 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
                         <button className="aspect-square flex items-center justify-center text-center md:text-base text-sm rounded border border-neutral-700 bg-white text-black" onClick={() => setIsCancelConfirmOpen(false)}>Zurück</button>
                         <button
                           className="aspect-square flex items-center justify-center text-center md:text-base text-sm rounded bg-red-600 text-white"
-                          onClick={async () => {
-                            if (!selectedBooking) return;
-                            const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "STORNIERT" }) });
-                            if (r.ok) {
-                              setIsDialogOpen(false);
-                              setIsCancelConfirmOpen(false);
-                              setBookings((prev) => prev.map((p) => p.id === selectedBooking.id ? { ...p, status: "STORNIERT" } : p));
-                              setSelectedBooking(null);
-                              setToastMessage("Termin storniert");
-                              setTimeout(() => setToastMessage(null), 3000);
-                            }
-                          }}
+                          onClick={finalCancel}
                         >
                           Endgültig stornieren
                         </button>
@@ -395,34 +414,14 @@ export default function AdminClient({ initial, initialServices }: Readonly<{ ini
                         </button>
                         <button
                           className="aspect-square flex items-center justify-center text-center md:text-base text-sm rounded bg-neutral-700 text-white hover:bg-neutral-600"
-                          onClick={async () => {
-                            if (!selectedBooking) return;
-                            const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "NO_SHOW" }) });
-                            if (r.ok) {
-                              setIsDialogOpen(false);
-                              setBookings((prev) => prev.map((p) => p.id === selectedBooking.id ? { ...p, status: "NO_SHOW" } : p));
-                              setSelectedBooking(null);
-                              setToastMessage("No Show markiert");
-                              setTimeout(() => setToastMessage(null), 3000);
-                            }
-                          }}
+                          onClick={markNoShow}
                         >
                           NO SHOW
                         </button>
                         <button
                           className="aspect-square flex items-center justify-center text-center md:text-base text-sm rounded bg-black text-white border border-neutral-700 hover:bg-neutral-900 disabled:opacity-50"
                           disabled={selectedBooking?.status !== "BESTAETIGT"}
-                          onClick={async () => {
-                            if (!selectedBooking) return;
-                            const r = await fetch(`/api/bookings/${selectedBooking.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "ABGESCHLOSSEN" }) });
-                            if (r.ok) {
-                              setIsDialogOpen(false);
-                              setBookings((prev) => prev.map((p) => p.id === selectedBooking.id ? { ...p, status: "ABGESCHLOSSEN" } : p));
-                              setSelectedBooking(null);
-                              setToastMessage("Als abgeschlossen markiert");
-                              setTimeout(() => setToastMessage(null), 3000);
-                            }
-                          }}
+                          onClick={markCompleted}
                         >
                           Abschließen
                         </button>

@@ -2,16 +2,65 @@ import { NextResponse } from "next/server";
 import { BookingStatus } from "@prisma/client";
 import { prisma } from "../../../lib/prisma";
 
-
+function toMinutes(hm: string) {
+  const [hh, mm] = hm.split(":").map((x) => Number.parseInt(x, 10));
+  if (Number.isNaN(hh) || Number.isNaN(mm)) return 0;
+  return hh * 60 + mm;
+}
 
 function getZurichTime(date: Date): string {
-  const s = date.toLocaleTimeString("de-CH", {
-    timeZone: "Europe/Zurich",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+  const s = date.toLocaleTimeString("de-CH", { timeZone: "Europe/Zurich", hour: "2-digit", minute: "2-digit", hour12: false });
   return s.replaceAll(".", ":");
+}
+
+function toLabel(m: number) {
+  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+}
+
+function computeBookedIntervals(bookings: Array<{ date: Date; service?: { duration?: number } | null }>) {
+  return bookings.map((b) => {
+    const startLabel = getZurichTime(new Date(b.date));
+    const [hh, mm] = startLabel.split(":");
+    const start = Number.parseInt(hh, 10) * 60 + Number.parseInt(mm, 10);
+    const dur = b.service?.duration ?? 30;
+    return { start, end: start + dur };
+  });
+}
+
+function computeBreakIntervals(wh: { breakStart?: string | null; breakEnd?: string | null }) {
+  const out: { start: number; end: number }[] = [];
+  if (wh?.breakStart && wh?.breakEnd) {
+    const bs = toMinutes(wh.breakStart);
+    const be = toMinutes(wh.breakEnd);
+    if (bs < be) out.push({ start: bs, end: be });
+  }
+  return out;
+}
+
+async function computeManualIntervals(dateStr: string) {
+  try {
+    const startOfDay = new Date(`${dateStr}T00:00:00`);
+    const endOfDay = new Date(`${dateStr}T23:59:59.999`);
+    const blocks = await prisma.blockedSlot.findMany({ where: { date: { gte: startOfDay, lte: endOfDay } } });
+    return blocks.map((b) => ({ start: toMinutes(b.startTime), end: toMinutes(b.endTime) }));
+  } catch {
+    return [] as { start: number; end: number }[];
+  }
+}
+
+function buildSlots(startMin: number, endMin: number, serviceDuration: number, booked: { start: number; end: number }[], brks: { start: number; end: number }[], manual: { start: number; end: number }[], nowMin: number, isToday: boolean) {
+  const slots: { time: string; isBooked: boolean }[] = [];
+  for (let start = startMin; start < endMin; start += 15) {
+    const end = start + serviceDuration;
+    const overClosing = end > endMin;
+    const overlaps = booked.some((bi) => start < bi.end && end > bi.start);
+    const overlapsBreak = brks.some((bi) => start < bi.end && end > bi.start);
+    const overlapsManual = manual.some((bi) => start < bi.end && end > bi.start);
+    const label = toLabel(start);
+    const past = isToday && start < nowMin;
+    slots.push({ time: label, isBooked: overClosing || overlaps || overlapsBreak || overlapsManual || past });
+  }
+  return slots;
 }
 
 export async function GET(req: Request) {
@@ -36,51 +85,19 @@ export async function GET(req: Request) {
     const wh = await prisma.workingHours.findUnique({ where: { dayOfWeek: dow } });
     if (!wh?.isOpen) return NextResponse.json([], { status: 200 });
 
-    const toMinutes = (hm: string) => {
-      const [hh, mm] = hm.split(":").map((x) => Number.parseInt(x, 10));
-      if (Number.isNaN(hh) || Number.isNaN(mm)) return 0;
-      return hh * 60 + mm;
-    };
     const startMin = toMinutes(wh.startTime);
     const endMin = toMinutes(wh.endTime);
 
     const bookings = await prisma.booking.findMany({
       where: {
-        date: {
-          gte: new Date(`${dateStr}T00:00:00`),
-          lt: new Date(`${dateStr}T23:59:59.999`),
-        },
+        date: { gte: new Date(`${dateStr}T00:00:00`), lt: new Date(`${dateStr}T23:59:59.999`) },
         status: BookingStatus.BESTAETIGT,
       },
       include: { service: true },
     });
-    const bookedIntervals: { start: number; end: number }[] = bookings.map((b: typeof bookings[number]) => {
-      const startLabel = getZurichTime(new Date(b.date));
-      const [hh, mm] = startLabel.split(":");
-      const start = Number.parseInt(hh, 10) * 60 + Number.parseInt(mm, 10);
-      const dur = b.service?.duration ?? 30;
-      return { start, end: start + dur };
-    });
-
-    const breakIntervals: { start: number; end: number }[] = [];
-    if (wh?.breakStart && wh?.breakEnd) {
-      const bs = toMinutes(wh.breakStart);
-      const be = toMinutes(wh.breakEnd);
-      if (bs < be) breakIntervals.push({ start: bs, end: be });
-    }
-
-    let manualIntervals: { start: number; end: number }[] = [];
-    try {
-      const startOfDay = new Date(`${dateStr}T00:00:00`);
-      const endOfDay = new Date(`${dateStr}T23:59:59.999`);
-      const blocks = await prisma.blockedSlot.findMany({ where: { date: { gte: startOfDay, lte: endOfDay } } });
-      manualIntervals = blocks.map((b: typeof blocks[number]) => ({ start: toMinutes(b.startTime), end: toMinutes(b.endTime) }));
-    } catch {
-      manualIntervals = [];
-    }
-
-    const toLabel = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-    const slots: { time: string; isBooked: boolean }[] = [];
+    const bookedIntervals = computeBookedIntervals(bookings as Array<{ date: Date; service?: { duration?: number } | null }>);
+    const breakIntervals = computeBreakIntervals(wh);
+    const manualIntervals = await computeManualIntervals(dateStr);
 
     const now = new Date();
     const nowParts = new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(now);
@@ -92,16 +109,8 @@ export async function GET(req: Request) {
     const todayZurich = `${String(ny)}-${String(nm).padStart(2, "0")}-${String(nd).padStart(2, "0")}`;
     const nowMinutesZurich = nh * 60 + nmin;
     const isToday = dateStr === todayZurich;
-    for (let start = startMin; start < endMin; start += 15) {
-      const end = start + serviceDuration;
-      const overClosing = end > endMin;
-      const overlaps = bookedIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
-      const overlapsBreak = breakIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
-      const overlapsManual = manualIntervals.some((bi: { start: number; end: number }) => start < bi.end && end > bi.start);
-      const label = toLabel(start);
-      const past = isToday && start < nowMinutesZurich;
-      slots.push({ time: label, isBooked: overClosing || overlaps || overlapsBreak || overlapsManual || past });
-    }
+
+    const slots = buildSlots(startMin, endMin, serviceDuration, bookedIntervals, breakIntervals, manualIntervals, nowMinutesZurich, isToday);
     return NextResponse.json(slots, { status: 200 });
   } catch (e) {
     const msg = typeof e === "object" && e !== null && "message" in e ? (e as { message: string }).message : String(e);
