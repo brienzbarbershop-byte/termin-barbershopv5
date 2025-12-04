@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import bcrypt from "bcryptjs";
+import { setAdminCookie } from "../../../../lib/auth";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -37,13 +38,7 @@ export async function POST(req: Request) {
       data: { adminPassword: hash, resetToken: null, resetTokenExpiry: null },
     });
     const res = NextResponse.json({ ok: true, id: updated.id }, { status: 200 });
-    res.cookies.set("admin_session", "1", {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 30 * 60,
-      path: "/",
-    });
+    setAdminCookie(res, 30 * 60);
     return res;
   } catch (e) {
     const msg = typeof e === "object" && e !== null && "message" in e ? (e as { message: string }).message : String(e);

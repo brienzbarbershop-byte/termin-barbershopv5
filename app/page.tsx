@@ -31,11 +31,17 @@ export default function Home() {
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [toast, setToast] = useState<string>("");
   const [openDays, setOpenDays] = useState<boolean[]>([false, false, true, true, true, true, true]);
+  const [csrf, setCsrf] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
+        try {
+          const rcsrf = await fetch("/api/security/csrf");
+          const dcsrf = await rcsrf.json().catch(() => ({}));
+          if (dcsrf?.token) setCsrf(String(dcsrf.token));
+        } catch {}
         const r = await fetch("/api/services");
         const data = await r.json();
         if (!cancelled) setServices(Array.isArray(data) ? data : []);
@@ -94,7 +100,7 @@ export default function Home() {
     fullDate.setHours(h, m);
     const res = await fetch("/api/bookings", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-csrf-token": csrf },
       body: JSON.stringify({
         serviceId,
         date: fullDate.toISOString(),
@@ -108,7 +114,7 @@ export default function Home() {
       }),
     });
     setIsLoading(false);
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}) as { error?: string });
     if (res.ok) {
       setStep(5);
     } else if (res.status === 409) {
@@ -127,7 +133,9 @@ export default function Home() {
         setErrorModal(msg);
       }
     } else {
-      setStatus("Fehler");
+      if (res.status === 403 && String(data?.error) === "csrf") setStatus("Sitzung abgelaufen. Bitte Seite neu laden.");
+      else if (res.status === 429 && String(data?.error) === "rate") setStatus("Zu viele Anfragen. Bitte warten Sie eine Minute und versuchen Sie es erneut.");
+      else setStatus("Fehler");
     }
   }
 
@@ -229,7 +237,7 @@ export default function Home() {
             })}
           </div>
           <div className="flex gap-4">
-            <button onClick={() => setStep(2)} className="px-4 py-2 rounded border border-neutral-700">Zurück</button>
+            <button aria-label="Zurück" onClick={() => setStep(2)} className="px-4 py-2 rounded border border-neutral-700">Zurück</button>
             <button
               disabled={!selectedTime}
               onClick={() => selectedTime && setStep(4)}
@@ -249,10 +257,12 @@ export default function Home() {
           <input value={clientEmail} onChange={(e) => { setClientEmail(e.target.value); if (emailError) setEmailError(""); }} onBlur={() => { if (!isValidEmail(clientEmail)) setEmailError("Ungültiges E-Mail-Format"); }} placeholder="Email" className={clsx("w-full px-3 py-2 rounded text-white", emailError ? "bg-red-50 border border-red-500 text-red-800" : "bg-black border border-[#C5A059]")} />
           {emailError && <div className="text-sm text-red-500 w-full">{emailError}</div>}
           <textarea value={clientNotes} onChange={(e) => setClientNotes(e.target.value.slice(0, 200))} placeholder="Notizen (max. 200 Zeichen)" className="w-full px-3 py-2 rounded bg-black border border-[#C5A059] text-white min-h-24" />
-          <label className="flex items-center gap-2 text-sm w-full"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="accent-[#C5A059]" />Ich akzeptiere die Datenschutzrichtlinie</label>
-          <label className="flex items-center gap-2 text-sm w-full"><input type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="accent-[#C5A059]" />Ich möchte Angebote erhalten</label>
+          <label className="flex items-center gap-2 text-sm w-full"><input aria-label="Datenschutz zustimmen" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="accent-[#C5A059]" />Ich akzeptiere die Datenschutzrichtlinie</label>
+          <div className="text-xs text-neutral-400 w-full">Ihre Daten werden ausschließlich zur Terminverwaltung verwendet.</div>
+          <label className="flex items-center gap-2 text-sm w-full"><input aria-label="Marketing Zustimmung" type="checkbox" checked={marketingConsent} onChange={(e) => setMarketingConsent(e.target.checked)} className="accent-[#C5A059]" />Ich möchte Angebote erhalten</label>
+          <div className="text-xs text-neutral-400 w-full">Sie können Marketing‑E‑Mails jederzeit abbestellen.</div>
           <div className="flex gap-4 w-full">
-            <button onClick={() => setStep(3)} className="px-4 py-2 rounded border border-neutral-700">Zurück</button>
+            <button aria-label="Zurück" onClick={() => setStep(3)} className="px-4 py-2 rounded border border-neutral-700">Zurück</button>
             <button disabled={isLoading || !clientName || !clientEmail || !clientPhone || !isValidPhoneNumber(clientPhone ?? "") || !!emailError || !isValidEmail(clientEmail) || !consent} onClick={bookAppointment} className="px-4 py-3 rounded bg-[#C5A059] text-black w-full disabled:opacity-50 disabled:cursor-not-allowed text-base font-semibold">Kostenpflichtig buchen</button>
           </div>
           {status && <div className="text-sm">{status}</div>}

@@ -1,9 +1,15 @@
 import { BookingStatus, Prisma } from "@prisma/client";
 import { prisma } from "../../../../lib/prisma";
+import { CRON_SECRET } from "../../../../lib/config";
+import { logInfo, logError } from "../../../../lib/logger";
 
 import { NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST(req: Request) {
+  const sec = req.headers.get("x-cron-secret") || "";
+  if (!CRON_SECRET || sec !== CRON_SECRET) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
   try {
     const now = new Date();
     const twoYearsAgo = new Date(now.getFullYear() - 2, now.getMonth(), now.getDate());
@@ -22,9 +28,11 @@ export async function POST() {
 
     await prisma.booking.deleteMany({ where: { status: BookingStatus.STORNIERT, date: { lt: thirtyDaysAgo } } });
 
+    logInfo("cron_cleanup_completed", { anonymized: oldIds.length });
     return NextResponse.json({ ok: true, anonymized: oldIds.length }, { status: 200 });
   } catch (e) {
     const msg = typeof e === "object" && e !== null && "message" in e ? (e as { message: string }).message : String(e);
+    logError("cron_cleanup_failed", { error: msg });
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }

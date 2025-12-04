@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
+import { ADMIN_SESSION_SECRET } from "./config";
 
 type SessionPayload = { uid: string; exp: number; ver: number };
 
@@ -10,7 +11,7 @@ function base64url(input: Buffer | string) {
 }
 
 function getSecret(): string {
-  const s = process.env.ADMIN_SESSION_SECRET;
+  const s = ADMIN_SESSION_SECRET;
   if (!s || s.length < 16) throw new Error("ADMIN_SESSION_SECRET missing or too short");
   return s;
 }

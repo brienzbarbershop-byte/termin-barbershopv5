@@ -5,6 +5,7 @@ import { requireAdmin } from "../../../lib/auth";
 import { randomUUID } from "node:crypto";
 import { sendBookingConfirmation } from "../../../lib/email";
 import { prisma } from "../../../lib/prisma";
+const rateMap = new Map<string, { ts: number; count: number }>();
 
 
 export async function GET(req: Request) {
@@ -25,6 +26,25 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const headerToken = req.headers.get("x-csrf-token") ?? "";
+    const c = await cookies();
+    const cookieToken = c.get("csrf_token")?.value ?? "";
+    if (!headerToken || !cookieToken || headerToken !== cookieToken) {
+      return NextResponse.json({ error: "csrf" }, { status: 403 });
+    }
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const max = 6;
+    const entry = rateMap.get(ip);
+    if (!entry || now - entry.ts > windowMs) {
+      rateMap.set(ip, { ts: now, count: 1 });
+    } else {
+      entry.count++;
+      if (entry.count > max) {
+        return NextResponse.json({ error: "rate" }, { status: 429 });
+      }
+    }
     const body = await req.json();
     const { serviceId, date, clientName, clientEmail, clientPhone, notes, consent, marketingConsent } = body;
     if (!serviceId || !date || !clientName || !clientEmail || !clientPhone || consent !== true) {
@@ -150,6 +170,16 @@ export async function POST(req: Request) {
         include: { service: true },
       });
       try {
+        const dayAnchor = new Date(wy, wm - 1, wd, 0, 0, 0, 0);
+        const cells: { date: Date; minute: number; bookingId: number }[] = [];
+        for (let m = startCandidate; m < endCandidate; m += 15) {
+          cells.push({ date: dayAnchor, minute: m, bookingId: createdBooking.id });
+        }
+        await tx.slotLock.createMany({ data: cells, skipDuplicates: false });
+      } catch {
+        throw new Error("CONFLICT");
+      }
+      try {
         const emailLower = String(clientEmail).toLowerCase();
         const phoneStr = String(clientPhone);
         const nameStr = String(clientName);
@@ -179,6 +209,9 @@ export async function POST(req: Request) {
     const url = new URL(req.url);
     const debug = url.searchParams.get("debug") === "true";
     const msg = typeof e === "object" && e !== null && "message" in e ? (e as { message: string }).message : String(e);
+    if (msg === "CONFLICT") {
+      return NextResponse.json({ error: "CONFLICT" }, { status: 409 });
+    }
     if (msg === "TOO_SHORT") {
       return NextResponse.json({ error: "Wybrany termin jest za krótki dla tej usługi. Proszę wybrać inną godzinę." }, { status: 409 });
     }

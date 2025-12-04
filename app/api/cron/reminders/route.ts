@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { sendReminderEmail } from "../../../../lib/email";
+import { CRON_SECRET } from "../../../../lib/config";
+import { logInfo, logError } from "../../../../lib/logger";
 
 function zurichDateTimeParts(d: Date) {
   const dateStr = d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Zurich" });
@@ -9,6 +11,10 @@ function zurichDateTimeParts(d: Date) {
 }
 
 export async function GET(req: Request) {
+  const sec = req.headers.get("x-cron-secret") || "";
+  if (!CRON_SECRET || sec !== CRON_SECRET) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
   const now = new Date();
   const params = new URL(req.url).searchParams;
   const hrs = Number.parseInt(params.get("hours") ?? "3", 10);
@@ -60,16 +66,17 @@ export async function GET(req: Request) {
                 UPDATE "Booking" SET "reminderSent" = true WHERE id = ${b.id}
               `;
             } catch {
-              console.error("reminder flag update failed");
+              logError("reminder_flag_update_failed", { id: b.id });
             }
           sentCount++;
         }
       } catch {
-        console.error("reminder send failed");
+        logError("reminder_send_failed", { id: b.id });
       }
     }
   } catch {
-    console.error("reminders query failed");
+    logError("reminders_query_failed");
   }
+  logInfo("cron_reminders_completed", { sentCount, dry, debug });
   return NextResponse.json(debug ? { success: true, sentCount, matched } : { success: true, sentCount });
 }

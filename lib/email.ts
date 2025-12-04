@@ -1,10 +1,10 @@
 import { prisma } from "./prisma";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+import { APP_URL, BREVO_API_KEY, BREVO_SENDER_EMAIL, BREVO_SENDER_NAME } from "./config";
 const LOGO_URL = `${APP_URL}/logo.png`;
 
 export async function sendEmail({ to, subject, html, name }: { to: string; subject: string; html: string; name?: string }) {
   try {
-    const apiKey = process.env.BREVO_API_KEY;
+    const apiKey = BREVO_API_KEY;
     if (!apiKey) {
       try { await prisma.emailLog.create({ data: { recipient: to, subject, status: "ERROR:NO_API_KEY" } }); } catch {}
       return false;
@@ -16,11 +16,11 @@ export async function sendEmail({ to, subject, html, name }: { to: string; subje
     const api = new Brevo.TransactionalEmailsApi();
     api.authentications["apiKey"].apiKey = apiKey;
 
-    const title = process.env.BREVO_SENDER_NAME ?? "Barber Shop – Brienz";
+    const title = BREVO_SENDER_NAME;
     const payload = new Brevo.SendSmtpEmail();
     payload.subject = subject;
     payload.htmlContent = html;
-    payload.sender = { name: title, email: process.env.BREVO_SENDER_EMAIL ?? "kontakt@barbershop-brienz.ch" };
+    payload.sender = { name: title, email: BREVO_SENDER_EMAIL };
     payload.to = [{ email: to, name: name || to }];
 
     const res = await api.sendTransacEmail(payload);
@@ -61,8 +61,8 @@ export async function sendEmail({ to, subject, html, name }: { to: string; subje
 export async function sendBookingConfirmation({ email, name, date, serviceName, token }: { email: string; name: string; date: Date; serviceName?: string | null; token?: string }) {
   const d = new Intl.DateTimeFormat("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(date);
   const subj = "Terminbestätigung";
-  const title = process.env.BREVO_SENDER_NAME ?? "Barber Shop – Brienz";
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const title = BREVO_SENDER_NAME;
+  const base = APP_URL;
   const manageUrl = token ? `${base}/booking/manage/${token}` : base;
   const html = `
       <div style="font-family: Arial, sans-serif; background:#0f0f0f; color:#fff; padding:24px;">

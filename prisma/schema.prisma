@@ -32,6 +32,7 @@ model Booking {
   marketingConsent Boolean @default(false)
   customerId Int?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  locks      SlotLock[]
 
   @@index([date])
   @@index([status, date])
@@ -106,4 +107,15 @@ model BlockedSlot {
   startTime String
   endTime   String
   reason    String?
+}
+
+model SlotLock {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  minute    Int
+  bookingId Int
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([date, minute])
+  @@index([date])
 }

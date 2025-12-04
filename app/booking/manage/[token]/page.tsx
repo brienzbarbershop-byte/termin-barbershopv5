@@ -36,7 +36,10 @@ export default async function ManagePage({ params }: { params: Promise<{ token: 
       </div>
     );
   }
-  const { datum, zeit } = fmt(new Date(booking.date));
+  const when = new Date(booking.date);
+  const { datum, zeit } = fmt(when);
+  const canCancel = when.getTime() - Date.now() >= 2 * 60 * 60 * 1000;
+  const disabledReason = canCancel ? undefined : "Stornierung ist weniger als 2 Stunden vor dem Termin nicht möglich.";
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md p-6 rounded-lg border border-[#C5A059] bg-black">
@@ -62,7 +65,7 @@ export default async function ManagePage({ params }: { params: Promise<{ token: 
           )}
         </div>
         <div className="flex items-center justify-between gap-2">
-          <CancelButton token={token} />
+          <CancelButton token={token} canCancel={canCancel} disabledReason={disabledReason} />
           <Link href="/" className="px-4 py-2 rounded bg-[#C5A059] text-black">Neuen Termin buchen</Link>
         </div>
       </div>
