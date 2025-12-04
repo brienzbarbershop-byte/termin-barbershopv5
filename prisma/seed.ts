@@ -49,7 +49,7 @@ async function main() {
   }
 }
 
-await (async () => {
+(async () => {
   try {
     await main();
   } catch (e) {

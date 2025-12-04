@@ -6,7 +6,7 @@ export async function sendEmail({ to, subject, html, name }: { to: string; subje
   try {
     const apiKey = process.env.BREVO_API_KEY;
     if (!apiKey) {
-      try { await prisma.emailLog.create({ data: { recipient: to, subject, status: "ERROR" } }); } catch {}
+      try { await prisma.emailLog.create({ data: { recipient: to, subject, status: "ERROR:NO_API_KEY" } }); } catch {}
       return false;
     }
     type Auth = { apiKey: string };
@@ -23,11 +23,37 @@ export async function sendEmail({ to, subject, html, name }: { to: string; subje
     payload.sender = { name: title, email: process.env.BREVO_SENDER_EMAIL ?? "kontakt@barbershop-brienz.ch" };
     payload.to = [{ email: to, name: name || to }];
 
-    await api.sendTransacEmail(payload);
-    try { await prisma.emailLog.create({ data: { recipient: to, subject, status: "SENT", sentAt: new Date() } }); } catch {}
+    const res = await api.sendTransacEmail(payload);
+    const msgId = (() => {
+      try {
+        const r = res as Record<string, unknown>;
+        const a = (r?.["messageId"] ?? r?.["messageIds"]) as unknown;
+        if (typeof a === "string") return a;
+        if (Array.isArray(a) && typeof a[0] === "string") return a[0];
+        return undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    try { await prisma.emailLog.create({ data: { recipient: to, subject, status: msgId ? `SENT:${msgId}` : "SENT", sentAt: new Date() } }); } catch {}
     return true;
-  } catch {
-    try { await prisma.emailLog.create({ data: { recipient: to, subject, status: "ERROR", sentAt: new Date() } }); } catch {}
+  } catch (e) {
+    const errMsg = (() => {
+      try {
+        if (typeof e === "string") return e;
+        if (e && typeof e === "object") {
+          const m = (e as Record<string, unknown>)["message"];
+          if (typeof m === "string") return m;
+          const r = (e as Record<string, unknown>)["response"] as unknown;
+          const d = r && typeof r === "object" ? (r as Record<string, unknown>)["text"] : undefined;
+          if (typeof d === "string") return d;
+        }
+        return "UNKNOWN_ERROR";
+      } catch {
+        return "UNKNOWN_ERROR";
+      }
+    })();
+    try { await prisma.emailLog.create({ data: { recipient: to, subject, status: `ERROR:${String(errMsg).slice(0, 180)}`, sentAt: new Date() } }); } catch {}
     return false;
   }
 }

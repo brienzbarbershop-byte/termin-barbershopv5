@@ -15,10 +15,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   title: "Barber Shop Brienz – Ihr Herrenfriseur in Interlaken/Brienz",
   description: "Online buchen. Herrenhaarschnitt, Bart, Kinderleistungen. Schnell und bequem.",
   manifest: "/manifest.json",
+  metadataBase: new URL(baseUrl),
   icons: {
     icon: "/booking/favicon.ico",
     shortcut: "/booking/favicon-16x16.png",
@@ -31,7 +33,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Barber Shop Brienz – Ihr Herrenfriseur in Interlaken/Brienz",
     description: "Online buchen. Herrenhaarschnitt, Bart, Kinderleistungen. Schnell und bequem.",
-    url: "https://termin.barbershop-brienz.ch",
+    url: baseUrl,
     siteName: "Barber Shop Brienz",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
     locale: "de_CH",
