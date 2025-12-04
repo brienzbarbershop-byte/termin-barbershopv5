@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { BookingStatus } from "@prisma/client";
 import { cookies } from "next/headers";
+import { logInfo, logError } from "../../../../lib/logger";
+import { reportError } from "../../../../lib/sentry";
 
 export async function POST(req: Request) {
   try {
@@ -22,13 +24,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "too_close" }, { status: 409 });
     }
     if (String(booking.status) === "STORNIERT") return NextResponse.json({ ok: true }, { status: 200 });
-  await prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.STORNIERT } });
+    await prisma.booking.update({ where: { id: booking.id }, data: { status: BookingStatus.STORNIERT } });
   try {
     await prisma.slotLock.deleteMany({ where: { bookingId: booking.id } });
   } catch {}
+  logInfo("booking_cancelled", { bookingId: booking.id });
   return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     const msg = typeof e === "object" && e !== null && "message" in e ? (e as { message: string }).message : String(e);
+    logError("booking_cancel_failed", { error: msg });
+    reportError("booking_cancel_failed", { error: msg });
     return NextResponse.json({ error: msg || "cancel failed" }, { status: 500 });
   }
 }

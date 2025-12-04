@@ -5,6 +5,8 @@ import { requireAdmin } from "../../../lib/auth";
 import { randomUUID } from "node:crypto";
 import { sendBookingConfirmation } from "../../../lib/email";
 import { prisma } from "../../../lib/prisma";
+import { logInfo, logError } from "../../../lib/logger";
+import { reportError } from "../../../lib/sentry";
 const rateMap = new Map<string, { ts: number; count: number }>();
 
 
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
     if (!serviceId || !date || !clientName || !clientEmail || !clientPhone || consent !== true) {
       return NextResponse.json({ error: "Ungültige Eingabe" }, { status: 400 });
     }
+    logInfo("booking_attempt", { serviceId, date });
     const created = await prisma.$transaction(async (tx) => {
       const when = new Date(date);
       const today = new Date();
@@ -139,7 +142,7 @@ export async function POST(req: Request) {
           throw new Error("BLOCKED");
         }
       } catch {
-        console.error("blockedSlot check failed");
+        logError("blocked_slot_check_failed");
       }
       // Prüfen, ob Termin in regelmäßiger Pause liegt
       try {
@@ -153,7 +156,7 @@ export async function POST(req: Request) {
           throw new Error("BLOCKED");
         }
       } catch {
-        console.error("recurringBreaks check failed");
+        logError("recurring_breaks_check_failed");
       }
       const createdBooking = await tx.booking.create({
         data: {
@@ -169,15 +172,28 @@ export async function POST(req: Request) {
         },
         include: { service: true },
       });
-      try {
+      {
         const dayAnchor = new Date(wy, wm - 1, wd, 0, 0, 0, 0);
         const cells: { date: Date; minute: number; bookingId: number }[] = [];
         for (let m = startCandidate; m < endCandidate; m += 15) {
           cells.push({ date: dayAnchor, minute: m, bookingId: createdBooking.id });
         }
-        await tx.slotLock.createMany({ data: cells, skipDuplicates: false });
-      } catch {
-        throw new Error("CONFLICT");
+        const maxAttempts = 3;
+        let attempt = 0;
+        // small retry/backoff loop to handle near-simultaneous conflicts
+        // relies on DB uniqueness to prevent double booking
+        while (true) {
+          try {
+            await tx.slotLock.createMany({ data: cells, skipDuplicates: false });
+            break;
+          } catch {
+            attempt++;
+            if (attempt >= maxAttempts) {
+              throw new Error("CONFLICT");
+            }
+            await new Promise((r) => setTimeout(r, 30 + Math.floor(Math.random() * 40)));
+          }
+        }
       }
       try {
         const emailLower = String(clientEmail).toLowerCase();
@@ -194,15 +210,15 @@ export async function POST(req: Request) {
           await tx.$executeRaw`UPDATE "Booking" SET "customerId" = ${cid} WHERE id = ${createdBooking.id}`;
         }
       } catch {
-        console.error("customer linkage failed");
+        logError("customer_linkage_failed");
       }
       return createdBooking;
     });
     const token = created.cancellationToken ?? randomUUID();
     try {
       await sendBookingConfirmation({ email: created.clientEmail, name: created.clientName, date: new Date(created.date), serviceName: created.service?.name, token });
-    } catch (e) {
-      console.error("sendBookingConfirmation error", e);
+    } catch {
+      logError("send_booking_confirmation_failed", { bookingId: created.id });
     }
     return NextResponse.json(created, { status: 201 });
   } catch (e) {
@@ -210,6 +226,7 @@ export async function POST(req: Request) {
     const debug = url.searchParams.get("debug") === "true";
     const msg = typeof e === "object" && e !== null && "message" in e ? (e as { message: string }).message : String(e);
     if (msg === "CONFLICT") {
+      logInfo("booking_conflict", {});
       return NextResponse.json({ error: "CONFLICT" }, { status: 409 });
     }
     if (msg === "TOO_SHORT") {
@@ -221,6 +238,8 @@ export async function POST(req: Request) {
     if (msg === "SERVICE_NOT_FOUND") {
       return NextResponse.json({ error: "Service nicht gefunden" }, { status: 400 });
     }
+    logError("booking_failed", { error: msg });
+    reportError("booking_failed", { error: msg });
     return NextResponse.json(debug ? { error: msg } : { error: "Failed to create booking" }, { status: 500 });
   }
 }

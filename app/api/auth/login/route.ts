@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../../lib/prisma";
 import { setAdminCookie } from "../../../../lib/auth";
+import { logInfo, logError } from "../../../../lib/logger";
+import { reportError } from "../../../../lib/sentry";
 
 const attempts = new Map<string, { count: number; until?: number }>();
 
@@ -13,12 +15,15 @@ export async function POST(req: Request) {
   const now = Date.now();
   const entry = attempts.get(ip);
   if (entry?.until && now < entry.until) {
+    logInfo("admin_login_rate_limited", { ip });
     return NextResponse.json({ ok: false, error: "too_many_attempts" }, { status: 429 });
   }
   const config = await prisma.storeConfig.findFirst();
   const storedHash = config?.adminPassword;
   const envHash = process.env.ADMIN_PASSWORD_HASH;
   if (!storedHash && !envHash) {
+    logError("admin_not_configured", {});
+    reportError("admin_not_configured", {});
     return NextResponse.json({ ok: false, error: "admin_not_configured" }, { status: 503 });
   }
   let ok = false;
@@ -33,9 +38,12 @@ export async function POST(req: Request) {
     const cnt = (entry?.count ?? 0) + 1;
     const until = cnt >= 5 ? now + 15 * 60 * 1000 : undefined;
     attempts.set(ip, { count: cnt, until });
+    logInfo("admin_login_failed", { ip, count: cnt });
+    reportError("admin_login_failed", { ip, count: cnt });
     return NextResponse.json({ ok: false }, { status: 401 });
   }
   attempts.delete(ip);
+  logInfo("admin_login_success", { ip });
   const res = NextResponse.json({ ok: true }, { status: 200 });
   setAdminCookie(res, 30 * 60);
   return res;

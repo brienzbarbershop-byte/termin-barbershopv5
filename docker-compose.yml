@@ -2,7 +2,7 @@ services:
   app:
     build: .
     user: root
-    command: sh -c "npm install && npx prisma generate && npm run dev"
+    command: sh -c "npm ci --include=dev && npx prisma@5.22.0 generate && npm run build && npm run start"
     env_file:
       - .env
     volumes:
@@ -12,7 +12,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/barbershop?schema=public"
       ADMIN_PASSWORD: "barber123"
     depends_on:
@@ -36,4 +36,7 @@ services:
     image: alpine:3.20
     depends_on:
       - app
-    command: sh -c "apk add --no-cache curl && echo '*/10 * * * * curl -fsS http://app:3000/api/cron/reminders || true' > /etc/crontabs/root && crond -f -l 8"
+    env_file:
+      - .env
+    command: |
+      sh -c "apk add --no-cache curl && echo '*/10 * * * * curl -fsS -H \"x-cron-secret: '$CRON_SECRET'\" http://app:3000/api/cron/reminders || true' > /etc/crontabs/root && crond -f -l 8"
